@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react"
 import * as THREE from "three"
-import { TDSLoader } from "three/examples/jsm/loaders/TDSLoader.js"
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js"
+import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader.js"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
 
 export function ThreeModelViewer() {
@@ -70,13 +71,16 @@ export function ThreeModelViewer() {
     const pivot = new THREE.Group()
     scene.add(pivot)
  
-    // Load Model
-    const loader = new TDSLoader()
-    loader.setResourcePath("/3dmodel/")
+    // Load Materials and Model
+    const mtlLoader = new MTLLoader()
+    mtlLoader.setPath("/3dmodel/c2lpk7avgum8-E-45-Aircraft/E-45-Aircraft/")
+    mtlLoader.load("E 45 Aircraft_obj.mtl", (materials) => {
+      materials.preload()
  
-    loader.load(
-      "/3dmodel/BEE.3DS",
-      (object) => {
+      const objLoader = new OBJLoader()
+      objLoader.setMaterials(materials)
+      objLoader.setPath("/3dmodel/c2lpk7avgum8-E-45-Aircraft/E-45-Aircraft/")
+      objLoader.load("E 45 Aircraft_obj.obj", (object) => {
         // Center the geometry of loaded object
         const box = new THREE.Box3().setFromObject(object)
         const size = box.getSize(new THREE.Vector3())
@@ -86,82 +90,42 @@ export function ThreeModelViewer() {
         object.position.y += (object.position.y - center.y)
         object.position.z += (object.position.z - center.z)
  
-        // Scale to fit canvas
+        // Scale to fit canvas (zoomed in slightly)
         const maxDim = Math.max(size.x, size.y, size.z)
-        const scale = 6.0 / maxDim
+        const scale = 7.5 / maxDim
         object.scale.set(scale, scale, scale)
  
-        // Correct the bee's orientation so the head points upwards/forward
-        object.rotation.x = -Math.PI / 2.5
-        object.rotation.z = Math.PI
+        // Set standard orientation for aircraft
+        object.rotation.x = 0
+        object.rotation.y = 0
+        object.rotation.z = 0
  
-        // Traverse the object to apply custom, high-quality materials (yellow/black/translucent wings)
+        // Traverse the object to apply shadow mapping and texture correction
         object.traverse((child) => {
           if (child instanceof THREE.Mesh) {
-            const name = child.name.toLowerCase()
-            let material: THREE.Material
- 
-            if (name.includes("wing") || name.includes("wing2")) {
-              material = new THREE.MeshStandardMaterial({
-                color: "#e2e8f0", // Sleek light gray/blue transparent wings
-                transparent: true,
-                opacity: 0.6,
-                metalness: 0.1,
-                roughness: 0.1,
-                side: THREE.DoubleSide
-              })
-            } else if (name.includes("stripe") || name.includes("black") || name.includes("eye") || name.includes("leg")) {
-              material = new THREE.MeshStandardMaterial({
-                color: "#1e293b", // Dark Slate/Black glossy metal
-                metalness: 0.8,
-                roughness: 0.2
-              })
-            } else if (name.includes("body") || name.includes("head") || name.includes("abdomen") || name.includes("yellow")) {
-              material = new THREE.MeshStandardMaterial({
-                color: "#fbbf24", // Golden Yellow glossy metal
-                metalness: 0.7,
-                roughness: 0.2
-              })
-            } else {
-              // Fallback pattern to give the bee its natural stripes based on mesh ID
-              const id = child.id
-              if (id % 3 === 0) {
-                material = new THREE.MeshStandardMaterial({
-                  color: "#171717", // Jet Black
-                  metalness: 0.7,
-                  roughness: 0.2
-                })
-              } else if (id % 3 === 1) {
-                material = new THREE.MeshStandardMaterial({
-                  color: "#f59e0b", // Amber/Gold
-                  metalness: 0.7,
-                  roughness: 0.2
-                })
-              } else {
-                material = new THREE.MeshStandardMaterial({
-                  color: "#a3a3a3", // Glossy steel highlights
-                  metalness: 0.9,
-                  roughness: 0.1
-                })
-              }
-            }
- 
-            child.material = material
             child.castShadow = true
             child.receiveShadow = true
+            if (child.material) {
+              const materialsArray = Array.isArray(child.material) ? child.material : [child.material]
+              materialsArray.forEach((mat) => {
+                mat.side = THREE.DoubleSide
+              })
+            }
           }
         })
  
         pivot.add(object)
         setLoading(false)
-      },
-      undefined,
-      (err) => {
-        console.error("Error loading 3D Model:", err)
+      }, undefined, (err) => {
+        console.error("Error loading OBJ Model:", err)
         setError("Failed to load 3D Model")
         setLoading(false)
-      }
-    )
+      })
+    }, undefined, (err) => {
+      console.error("Error loading MTL Materials:", err)
+      setError("Failed to load materials")
+      setLoading(false)
+    })
  
     // Default target values for lerping back
     const defaultCameraPos = new THREE.Vector3(0, 0, 12)

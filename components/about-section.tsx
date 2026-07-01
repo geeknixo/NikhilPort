@@ -1,6 +1,5 @@
 import { User } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import Image from "next/image"
 import { useLanguage } from "@/lib/language-context"
 
 export function AboutSection() {
@@ -11,7 +10,14 @@ export function AboutSection() {
       <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 md:gap-16 items-center">
         <div className="flex justify-center">
           <div className="relative w-full max-w-lg aspect-square border-[4px] border-black rounded-full overflow-hidden bg-[#FF6B6B] shadow-[-8px_8px_0px_0px_rgba(0,0,0,1)]">
-            <Image src="/cartoon-avatar-man-with-beard-yellow-shirt.jpg" alt="About me photo" fill className="object-cover" />
+            <video 
+              src="/nikhil.mp4" 
+              autoPlay 
+              loop 
+              muted 
+              playsInline 
+              className="object-cover w-full h-full"
+            />
           </div>
         </div>
 
