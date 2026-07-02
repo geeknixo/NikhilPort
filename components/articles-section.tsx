@@ -1,13 +1,21 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { MessageSquare, Github, Monitor, BookOpen, Send, Star, GitFork, ArrowUpRight, Terminal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 type TabType = "gecko" | "github" | "setup" | "blog"
 
 export function ArticlesSection() {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabType>("gecko")
+  const [articlesList, setArticlesList] = useState<any[]>([])
+
+  useEffect(() => {
+    const { getBlogs } = require("@/lib/data-store")
+    setArticlesList(getBlogs().slice(0, 3))
+  }, [])
 
   // --- GECKO CHAT STATE ---
   const [chatMessages, setChatMessages] = useState<{ sender: "user" | "gecko"; text: string }[]>([
@@ -101,33 +109,6 @@ export function ArticlesSection() {
     { title: "Favorite Libraries", desc: "Framer Motion, Three.js, Tailwind CSS", color: "bg-[#10b981]", colSpan: "col-span-1" }
   ]
 
-  // --- DEV ARTICLES DATA ---
-  const articlesList = [
-    {
-      title: "Optimizing 3D loaders in Next.js using Three.js and TDSLoader",
-      excerpt: "Learn how to bypass coordinate rendering lags and configure glossy shaders for 3DS model structures in React web systems.",
-      date: "Jun 2026",
-      readTime: "5 min read",
-      tags: ["Three.js", "Next.js"],
-      color: "border-[#FF6B6B]"
-    },
-    {
-      title: "Building scalable CRM architectures with Laravel and MySQL",
-      excerpt: "Step-by-step logic building tips for managing mutual fund investments, automated SIP updates, and admin dashboard panels.",
-      date: "May 2026",
-      readTime: "8 min read",
-      tags: ["Laravel", "PHP", "MySQL"],
-      color: "border-[#2F81F7]"
-    },
-    {
-      title: "Spring physics and layouts: A guide to Framer Motion dynamic navigation",
-      excerpt: "How to design custom bounciness parameters and layoutId capsules that scale instantly with zero browser layout shifts.",
-      date: "Apr 2026",
-      readTime: "6 min read",
-      tags: ["Framer Motion", "React"],
-      color: "border-[#FFC224]"
-    }
-  ]
 
   return (
     <section id="dev-hub" className="container mx-auto px-4 py-10 md:py-16">
@@ -295,36 +276,59 @@ export function ArticlesSection() {
 
           {/* TAB 4: DEV BLOG */}
           {activeTab === "blog" && (
-            <div className="space-y-6 flex-grow">
-              {articlesList.map((art, idx) => (
-                <div 
-                  key={idx} 
-                  className={`bg-white border-4 border-black rounded-2xl p-5 md:p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-[12px] ${art.color}`}
-                >
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-2">
-                      {art.tags.map((t, i) => (
-                        <span key={i} className="text-[10px] font-black bg-gray-100 border border-black px-2 py-0.5 rounded text-black">
-                          {t}
-                        </span>
-                      ))}
-                      <span className="text-xs text-gray-500 font-bold ml-2">{art.date}</span>
+            <div className="space-y-6 flex-grow flex flex-col justify-between">
+              <div className="space-y-6">
+                {articlesList.length === 0 ? (
+                  <div className="text-center py-8 border-4 border-dashed border-gray-250 rounded-2xl">
+                    <p className="font-bold text-gray-400 text-sm">No articles published in database yet.</p>
+                  </div>
+                ) : (
+                  articlesList.map((art, idx) => (
+                    <div 
+                      key={art.id || idx} 
+                      className={`bg-white border-4 border-black rounded-2xl p-5 md:p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-[12px] ${art.color}`}
+                    >
+                      <div className="space-y-2 flex-grow">
+                        <div className="flex items-center gap-2">
+                          {art.tags.map((t: string, i: number) => (
+                            <span key={i} className="text-[10px] font-black bg-gray-100 border border-black px-2 py-0.5 rounded text-black">
+                              {t}
+                            </span>
+                          ))}
+                          <span className="text-xs text-gray-500 font-bold ml-2">{art.date}</span>
+                        </div>
+                        <h3 
+                          onClick={() => router.push(`/blogs/${art.id}`)}
+                          className="font-black text-base md:text-lg text-black hover:text-[#6366F1] cursor-pointer transition-colors leading-snug"
+                        >
+                          {art.title}
+                        </h3>
+                        <p className="text-xs md:text-sm text-gray-600 font-medium leading-relaxed">
+                          {art.excerpt}
+                        </p>
+                      </div>
+                      <div className="flex-shrink-0 flex items-center justify-between md:flex-col md:items-end gap-2 border-t md:border-t-0 border-black/10 pt-3 md:pt-0">
+                        <span className="text-[11px] font-mono text-gray-400 font-bold">{art.readTime}</span>
+                        <button 
+                          onClick={() => router.push(`/blogs/${art.id}`)}
+                          className="text-xs font-bold text-black border-b-2 border-black flex items-center gap-0.5 cursor-pointer hover:text-[#6366F1]"
+                        >
+                          Read Post <ArrowUpRight className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
-                    <h3 className="font-black text-base md:text-lg text-black hover:text-[#6366F1] cursor-pointer transition-colors leading-snug">
-                      {art.title}
-                    </h3>
-                    <p className="text-xs md:text-sm text-gray-600 font-medium leading-relaxed">
-                      {art.excerpt}
-                    </p>
-                  </div>
-                  <div className="flex-shrink-0 flex items-center justify-between md:flex-col md:items-end gap-2 border-t md:border-t-0 border-black/10 pt-3 md:pt-0">
-                    <span className="text-[11px] font-mono text-gray-400 font-bold">{art.readTime}</span>
-                    <span className="text-xs font-bold text-black border-b-2 border-black flex items-center gap-0.5 cursor-pointer">
-                      Read Post <ArrowUpRight className="w-3 h-3" />
-                    </span>
-                  </div>
-                </div>
-              ))}
+                  ))
+                )}
+              </div>
+
+              <div className="text-center pt-6">
+                <button
+                  onClick={() => router.push("/blogs")}
+                  className="bg-[#6366F1] text-white hover:bg-[#6366F1]/95 border-4 border-black font-black text-sm py-3.5 px-6 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all inline-flex items-center gap-2"
+                >
+                  <BookOpen className="w-4 h-4" /> View All Articles / Blogs 📚
+                </button>
+              </div>
             </div>
           )}
 

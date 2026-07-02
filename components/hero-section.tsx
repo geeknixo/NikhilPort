@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Mail, FolderOpen } from "lucide-react"
+import { Mail, FolderOpen, Terminal, Cpu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThreeModelViewer } from "@/components/three-model-viewer"
 import { useLanguage } from "@/lib/language-context"
@@ -28,6 +28,50 @@ export function HeroSection() {
 
   return (
     <section className="container mx-auto px-4 py-16 md:py-24 mt-16 md:mt-20 relative overflow-hidden">
+      
+      {/* Top Floating Stickers (Left and Right of Navigation Capsule) - Absolute positioned to scroll with page */}
+      <div className="absolute inset-x-0 top-0 pointer-events-none select-none z-49 hidden lg:block h-20">
+        {/* Left Sticker */}
+        <motion.div
+          drag
+          dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+          dragElastic={0.9}
+          dragTransition={{ bounceStiffness: 80, bounceDamping: 12 }}
+          className="absolute bg-[#F3E8FF] dark:bg-purple-950 border-3 border-black dark:border-white px-4 py-2.5 rounded-2xl shadow-[4px_4px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_rgba(255,255,255,1)] flex items-center gap-2 text-purple-900 dark:text-purple-200 font-black text-sm pointer-events-auto select-none cursor-grab active:cursor-grabbing"
+          style={{ left: "calc(50% - 370px)", top: "10px" }}
+          animate={{
+            y: [0, -6, 0],
+            rotate: [-3, -1, -3],
+          }}
+          transition={{
+            y: { duration: 5, repeat: Infinity, ease: "easeInOut" },
+            rotate: { duration: 5, repeat: Infinity, ease: "easeInOut" },
+          }}
+        >
+          <Terminal className="w-4 h-4 text-purple-700 dark:text-purple-300" /> DEV STUDIO
+        </motion.div>
+
+        {/* Right Sticker */}
+        <motion.div
+          drag
+          dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+          dragElastic={0.9}
+          dragTransition={{ bounceStiffness: 80, bounceDamping: 12 }}
+          className="absolute bg-[#FEF3C7] dark:bg-amber-950 border-3 border-black dark:border-white px-4 py-2.5 rounded-2xl shadow-[4px_4px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_rgba(255,255,255,1)] flex items-center gap-2 text-amber-800 dark:text-amber-200 font-black text-sm pointer-events-auto select-none cursor-grab active:cursor-grabbing"
+          style={{ right: "calc(50% - 370px)", top: "10px" }}
+          animate={{
+            y: [0, 6, 0],
+            rotate: [3, 1, 3],
+          }}
+          transition={{
+            y: { duration: 6, repeat: Infinity, ease: "easeInOut" },
+            rotate: { duration: 6, repeat: Infinity, ease: "easeInOut" },
+          }}
+        >
+          <Cpu className="w-4 h-4 text-amber-600 dark:text-amber-300 animate-pulse" /> MCA FULL STACK
+        </motion.div>
+      </div>
+
       {/* Floating Hero Background Doodles */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0 opacity-30">
         {/* Large Sparkle Top Left */}
@@ -157,14 +201,14 @@ export function HeroSection() {
 
           <div className="flex flex-col sm:flex-row flex-wrap gap-4 sm:gap-6 pt-2">
             <a href="#portfolio" className="w-full sm:w-auto">
-              <Button className="bg-[#2F81F7] text-black border-4 border-black hover:bg-[#2F81F7]/95 rounded-xl py-4 px-6 md:py-[22px] md:px-[62px] text-base md:text-lg font-black h-auto w-full sm:w-auto sm:min-w-[220px] shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:translate-x-[5px] active:translate-y-[5px] active:shadow-none transition-all duration-150">
+              <Button className="glass-btn-shimmer bg-[#2F81F7]/80 text-black border-4 border-black hover:bg-[#2F81F7]/95 rounded-xl py-4 px-6 md:py-[22px] md:px-[62px] text-base md:text-lg font-black h-auto w-full sm:w-auto sm:min-w-[220px] shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:translate-x-[5px] active:translate-y-[5px] active:shadow-none transition-all duration-150">
                 <FolderOpen className="w-5 h-5 mr-2" />
                 {t("viewProjects")}
               </Button>
             </a>
             <a href="/cv/NikhilCV (1).pdf" download className="w-full sm:w-auto">
               <Button
-                className="bg-[#FFC224] text-black border-4 border-black hover:bg-[#FFC224]/95 rounded-xl py-4 px-6 md:py-[22px] md:px-[62px] text-base md:text-lg font-black h-auto w-full sm:w-auto sm:min-w-[220px] shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:translate-x-[5px] active:translate-y-[5px] active:shadow-none transition-all duration-150"
+                className="glass-btn-shimmer bg-[#FFC224]/80 text-black border-4 border-black hover:bg-[#FFC224]/95 rounded-xl py-4 px-6 md:py-[22px] md:px-[62px] text-base md:text-lg font-black h-auto w-full sm:w-auto sm:min-w-[220px] shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:translate-x-[5px] active:translate-y-[5px] active:shadow-none transition-all duration-150"
               >
                 <Mail className="w-5 h-5 mr-2" />
                 {t("downloadCV")}

@@ -7,13 +7,8 @@ import { useLanguage, type Language } from "@/lib/language-context"
 import { motion, AnimatePresence } from "framer-motion"
 
 export function ThemeLangControls() {
-  const { theme, setTheme } = useTheme()
   const { language, setLanguage } = useLanguage()
   const [isLangOpen, setIsLangOpen] = useState(false)
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark")
-  }
 
   const languages: { code: Language; name: string; flag: string }[] = [
     { code: "en", name: "English", flag: "🇬🇧" },
@@ -23,18 +18,6 @@ export function ThemeLangControls() {
 
   return (
     <div className="fixed bottom-6 left-6 z-[100] flex items-center gap-3 pointer-events-auto">
-      {/* Theme Toggle Button */}
-      <motion.button
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={toggleTheme}
-        className="w-12 h-12 flex items-center justify-center bg-yellow-300 dark:bg-yellow-400 border-4 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer"
-        aria-label="Toggle dark mode"
-      >
-        <Sun className="w-5 h-5 text-black block dark:hidden" />
-        <Moon className="w-5 h-5 text-black hidden dark:block" />
-      </motion.button>
-
       {/* Language Selector Button & Dropdown */}
       <div className="relative">
         <motion.button

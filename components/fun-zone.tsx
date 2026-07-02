@@ -1,29 +1,15 @@
-"use client"
-
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Map, Sparkles, Smile, Bomb, RefreshCw, Star } from "lucide-react"
 
-interface Pin {
-  x: number; // percentage
-  y: number; // percentage
-  city: string;
-  count: number;
-}
-
 export function FunZone() {
-  // Visitors Map State
-  const [pins, setPins] = useState<Pin[]>([
-    { x: 72, y: 48, city: "New Delhi, India", count: 1840 },
-    { x: 25, y: 35, city: "New York, USA", count: 420 },
-    { x: 48, y: 30, city: "London, UK", count: 310 },
-    { x: 82, y: 38, city: "Tokyo, Japan", count: 185 },
-    { x: 88, y: 78, city: "Sydney, Australia", count: 95 },
-    { x: 54, y: 34, city: "Berlin, Germany", count: 215 },
-  ])
+  const mapRef = useRef<HTMLDivElement>(null)
+  const leafletMapRef = useRef<any>(null)
+  const markersGroupRef = useRef<any>(null)
+  
   const [userPinned, setUserPinned] = useState(false)
   const [totalVisitors, setTotalVisitors] = useState(3065)
-  const [hoveredPin, setHoveredPin] = useState<Pin | null>(null)
+  const [leafletLoaded, setLeafletLoaded] = useState(false)
   
   // Easter Eggs State
   const [botClickCount, setBotClickCount] = useState(0)
@@ -36,35 +22,46 @@ export function FunZone() {
   const handlePinUserLocation = () => {
     if (userPinned) return
     
-    // Default fallback coordinates for user pin (near central India)
-    const newPin: Pin = { x: 70, y: 52, city: "You (Local Visitor)", count: 1 }
-    
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          // Success: simulate a slight offset based on coordinates
           const lat = position.coords.latitude
           const lon = position.coords.longitude
-          // Simple mapping from lat/lon to map % (very rough but fun)
-          const x = Math.min(Math.max(((lon + 180) / 360) * 100, 5), 95)
-          const y = Math.min(Math.max(((90 - lat) / 180) * 100, 5), 95)
           
-          const geoPin = { x, y, city: "Your Location 📍", count: 1 }
-          setPins(prev => [...prev, geoPin])
+          const L = (window as any).L
+          if (L && leafletMapRef.current && markersGroupRef.current) {
+            const map = leafletMapRef.current
+            
+            // Custom green pulsing indicator for actual user coordinate
+            const userIcon = L.divIcon({
+              className: "custom-leaflet-user-marker",
+              html: `<span class="relative flex h-6 w-6">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-6 w-6 bg-green-500 border-2 border-white"></span>
+                    </span>`,
+              iconSize: [24, 24],
+              iconAnchor: [12, 12],
+            })
+
+            L.marker([lat, lon], { icon: userIcon })
+              .addTo(markersGroupRef.current)
+              .bindPopup("<b>You are here! 📍</b><br/>Location pinned dynamically.")
+              .openPopup()
+
+            // Centering zoom view to client location
+            map.flyTo([lat, lon], 7, { duration: 2.5 })
+          }
+
+          setUserPinned(true)
+          setTotalVisitors(prev => prev + 1)
         },
         () => {
-          // Fallback
-          setPins(prev => [...prev, newPin])
+          alert("Could not access your location. Please check browser permissions.")
         }
       )
     } else {
-      setPins(prev => [...prev, newPin])
+      alert("Geolocation is not supported by your browser.")
     }
-
-    // Fire emoji particles
-    spawnParticles(50, 50, "🎉")
-    setUserPinned(true)
-    setTotalVisitors(prev => prev + 1)
   }
 
   // Particle Emitter for Easter Eggs
@@ -115,7 +112,6 @@ export function FunZone() {
       }, 1000)
       return () => clearTimeout(timer)
     } else if (isSelfDestruct && destructCountdown === 0) {
-      // "Explosion" effects
       document.body.style.filter = "invert(100%)"
       setTimeout(() => {
         document.body.style.filter = "none"
@@ -124,156 +120,155 @@ export function FunZone() {
       }, 2000)
     }
   }, [isSelfDestruct, destructCountdown])
+  // Inject Leaflet CDN Assets dynamically
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    // Inject CSS
+    const link = document.createElement("link")
+    link.rel = "stylesheet"
+    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    document.head.appendChild(link)
+
+    // Inject JS
+    const script = document.createElement("script")
+    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    script.async = true
+    document.body.appendChild(script)
+
+    script.onload = () => {
+      setLeafletLoaded(true)
+    }
+
+    return () => {
+      if (document.head.contains(link)) document.head.removeChild(link)
+      if (document.body.contains(script)) document.body.removeChild(script)
+      if (leafletMapRef.current) {
+        leafletMapRef.current.remove()
+        leafletMapRef.current = null
+      }
+    }
+  }, [])
+
+  // Initialize Leaflet Map
+  useEffect(() => {
+    if (!leafletLoaded || !mapRef.current || leafletMapRef.current) return
+
+    const L = (window as any).L
+    if (!L) return
+
+    // Initialize Map Instance
+    const map = L.map(mapRef.current, {
+      center: [20, 0],
+      zoom: 2,
+      minZoom: 1.8,
+      maxZoom: 18,
+      scrollWheelZoom: false,
+    })
+
+    leafletMapRef.current = map
+
+    // Choose dark/light theme tiles based on document classes
+    const isDark = document.documentElement.classList.contains("dark")
+    const tileUrl = isDark
+      ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+      : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+
+    const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    
+    L.tileLayer(tileUrl, { attribution }).addTo(map)
+
+    // Add Markers Layer Group
+    const markersGroup = L.layerGroup().addTo(map)
+    markersGroupRef.current = markersGroup
+
+    // Default pins
+    const defaultPins = [
+      { lat: 28.6139, lon: 77.2090, city: "New Delhi, India", count: 1840 },
+      { lat: 40.7128, lon: -74.0060, city: "New York, USA", count: 420 },
+      { lat: 51.5074, lon: -0.1278, city: "London, UK", count: 310 },
+      { lat: 35.6762, lon: 139.6503, city: "Tokyo, Japan", count: 185 },
+      { lat: -33.8688, lon: 151.2093, city: "Sydney, Australia", count: 95 },
+      { lat: 52.5200, lon: 13.4050, city: "Berlin, Germany", count: 215 },
+    ]
+
+    const customIcon = L.divIcon({
+      className: "custom-leaflet-marker",
+      html: `<span class="relative flex h-5 w-5">
+              <span class="relative inline-flex rounded-full h-5 w-5 bg-red-500 border-2 border-black shadow-[1px_1px_0px_rgba(0,0,0,1)]"></span>
+            </span>`,
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+    })
+
+    defaultPins.forEach((pin) => {
+      L.marker([pin.lat, pin.lon], { icon: customIcon })
+        .addTo(markersGroup)
+        .bindPopup(`<b>${pin.city}</b><br/>${pin.count} visits`)
+    })
+  }, [leafletLoaded])
 
   return (
-    <section className="container mx-auto px-4 py-16 md:py-24 border-t-4 border-black bg-[#FFFBEB]">
-      <div className="max-w-7xl mx-auto grid lg:grid-cols-12 gap-12 items-stretch">
+    <section className="w-full py-16 md:py-24 border-t-4 border-black bg-[#FFFBEB] overflow-hidden">
+      
+      {/* Centered Heading */}
+      <div className="container mx-auto px-4 max-w-7xl">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+          <h3 className="text-2xl md:text-3xl font-black text-black flex items-center gap-2">
+            <Map className="w-8 h-8 text-blue-500" />
+            World Map of Visitors
+          </h3>
+          <div className="bg-[#E0E7FF] border-2 border-black px-4 py-1.5 rounded-full font-black text-sm text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            🌍 Global Visitors: {totalVisitors}
+          </div>
+        </div>
+      </div>
+
+      {/* Dynamic Leaflet Map Boxed inside Container */}
+      <div className="container mx-auto px-4 max-w-7xl">
+        <div className="relative w-full h-[400px] md:h-[500px] border-4 border-black dark:border-white rounded-3xl bg-zinc-100 dark:bg-zinc-900 z-0 overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)]">
+          <div ref={mapRef} className="w-full h-full" />
+        </div>
+      </div>
         
-        {/* Left Card: World Map of Visitors */}
-        <div className="lg:col-span-12 bg-white border-4 border-black rounded-3xl p-6 md:p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col justify-between">
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-              <h3 className="text-2xl md:text-3xl font-black text-black flex items-center gap-2">
-                <Map className="w-8 h-8 text-blue-500" />
-                World Map of Visitors
-              </h3>
-              <div className="bg-[#E0E7FF] border-2 border-black px-4 py-1.5 rounded-full font-black text-sm text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                🌍 Global Visitors: {totalVisitors}
-              </div>
-            </div>
+        {/* Custom style overrides for Leaflet markers */}
+        <style>{`
+          .custom-leaflet-marker, .custom-leaflet-user-marker {
+            background: transparent !important;
+            border: none !important;
+          }
+          .leaflet-container {
+            font-family: inherit;
+          }
+          .leaflet-popup-content-wrapper {
+            border: 3px solid black !important;
+            border-radius: 12px !important;
+            box-shadow: 3px 3px 0px 0px rgba(0,0,0,1) !important;
+            font-weight: 800;
+          }
+          .leaflet-popup-tip {
+            border: 2px solid black !important;
+          }
+        `}</style>
 
-            {/* Interactive World Map SVG Background */}
-            <div className="relative w-full aspect-[2/1] bg-[#F1F5F9] border-4 border-black rounded-2xl overflow-hidden mt-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-              {/* Simplified dotted/abstract world representation */}
-              <div className="absolute inset-0 opacity-20 bg-[url('/map/worldmap.png')] bg-cover bg-center"></div>
-              
-              {/* Map Outline Lines */}
-              <svg className="w-full h-full text-gray-300 stroke-gray-300 fill-none" viewBox="0 0 100 50">
-                {/* Americas */}
-                <path d="M10,10 C15,8 20,15 25,25 C30,35 25,45 20,48" strokeWidth="0.5" strokeDasharray="1,1" />
-                {/* Eurasia & Africa */}
-                <path d="M45,8 C55,5 75,10 80,18 C85,25 78,40 70,45" strokeWidth="0.5" strokeDasharray="1,1" />
-                <path d="M42,20 C48,22 55,30 52,42 C50,48 45,45 42,40" strokeWidth="0.5" strokeDasharray="1,1" />
-                {/* Australia */}
-                <path d="M82,38 C88,40 92,45 88,48 C85,45 80,40 82,38" strokeWidth="0.5" strokeDasharray="1,1" />
-              </svg>
-
-              {/* Pulsing Pin Markers */}
-              {pins.map((pin, index) => (
-                <div
-                  key={index}
-                  className="absolute cursor-pointer -translate-x-1/2 -translate-y-1/2 group"
-                  style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
-                  onMouseEnter={() => setHoveredPin(pin)}
-                  onMouseLeave={() => setHoveredPin(null)}
-                >
-                  <span className="relative flex h-4 w-4">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 border-2 border-black"></span>
-                  </span>
-
-                  {/* Tooltip */}
-                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black text-white text-[11px] font-black py-1 px-2.5 rounded border border-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10 shadow-lg">
-                    {pin.city} ({pin.count} visits)
-                  </div>
-                </div>
-              ))}
-
-              {/* Float Active Location Info Overlay */}
-              {hoveredPin && (
-                <div className="absolute bottom-4 left-4 bg-white border-2 border-black rounded-lg p-2 font-bold text-xs text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                  📍 {hoveredPin.city}: <span className="text-red-500">{hoveredPin.count} views</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm font-bold text-gray-600 text-center sm:text-left">
-              Click the button to fetch your location and mark yourself on Nikhil's global guest map!
-            </p>
-            <button
-              onClick={handlePinUserLocation}
-              disabled={userPinned}
-              className={`font-black text-sm px-6 py-3 border-2 border-black rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all ${
-                userPinned
-                  ? "bg-gray-150 text-gray-500 cursor-not-allowed shadow-none translate-x-[2px] translate-y-[2px]"
-                  : "bg-yellow-400 text-black hover:bg-yellow-300 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
-              }`}
-            >
-              {userPinned ? "📍 You Are Pinned!" : "Pin My Location! 📌"}
-            </button>
-          </div>
+      {/* Bottom CTA container */}
+      <div className="container mx-auto px-4 max-w-7xl mt-6">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border-4 border-black p-5 rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+          <p className="text-sm font-bold text-gray-600 text-center sm:text-left">
+            Click the button to fetch your location and mark yourself on Nikhil's global guest map!
+          </p>
+          <button
+            onClick={handlePinUserLocation}
+            disabled={userPinned}
+            className={`font-black text-sm px-6 py-3 border-2 border-black rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all shrink-0 ${
+              userPinned
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none translate-x-[2px] translate-y-[2px]"
+                : "bg-yellow-400 text-black hover:bg-yellow-300 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+            }`}
+          >
+            {userPinned ? "📍 You Are Pinned!" : "Pin My Location! 📌"}
+          </button>
         </div>
-
-        {/* Right Card: Fun Easter Eggs Zone (Commented out)
-        <div className="lg:col-span-4 bg-[#FFECEF] border-4 border-black rounded-3xl p-6 md:p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col justify-between">
-          <div>
-            <h3 className="text-2xl md:text-3xl font-black text-black mb-4 flex items-center gap-2">
-              <Smile className="w-8 h-8 text-pink-500" />
-              Easter Eggs! 🥚
-            </h3>
-            <p className="text-sm font-bold text-gray-700 leading-relaxed mb-6">
-              Interactive mini-features built purely for fun. Try clicking these toggles to trigger site-wide effects!
-            </p>
-
-            <div className="space-y-4">
-              <button
-                onClick={handleBarrelRoll}
-                className="w-full flex items-center justify-between p-4 bg-white border-2 border-black rounded-xl hover:bg-sky-50 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all font-black text-sm text-black"
-              >
-                <span className="flex items-center gap-2">
-                  <RefreshCw className="w-5 h-5 text-sky-500" />
-                  Do a Barrel Roll!
-                </span>
-                <span className="bg-sky-100 text-sky-800 text-[10px] px-2 py-0.5 rounded border border-black">360°</span>
-              </button>
-
-              <button
-                onClick={(e) => {
-                  setIsPartyMode(!isPartyMode)
-                  spawnParticles(e.clientX, e.clientY, "⚡")
-                }}
-                className={`w-full flex items-center justify-between p-4 border-2 border-black rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all font-black text-sm text-black ${
-                  isPartyMode ? "bg-purple-300" : "bg-white hover:bg-purple-50"
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <Star className="w-5 h-5 text-purple-500 animate-spin" />
-                  Party Mode
-                </span>
-                <span className="bg-purple-100 text-purple-800 text-[10px] px-2 py-0.5 rounded border border-black">
-                  {isPartyMode ? "ON" : "OFF"}
-                </span>
-              </button>
-
-              <button
-                onClick={(e) => {
-                  setIsSelfDestruct(true)
-                  spawnParticles(e.clientX, e.clientY, "💥")
-                }}
-                disabled={isSelfDestruct}
-                className={`w-full flex items-center justify-between p-4 border-2 border-black rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none transition-all font-black text-sm text-black ${
-                  isSelfDestruct ? "bg-red-300 text-black cursor-not-allowed shadow-none" : "bg-white hover:bg-red-50"
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <Bomb className="w-5 h-5 text-red-500" />
-                  Self-Destruct
-                </span>
-                <span className="bg-red-100 text-red-800 text-[10px] px-2 py-0.5 rounded border border-black">
-                  {isSelfDestruct ? `${destructCountdown}s` : "ACTIVATE"}
-                </span>
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-8 text-center text-xs font-black text-gray-500 uppercase tracking-widest">
-            Made with React & Framer Motion
-          </div>
-        </div>
-        */}
-
       </div>
 
       {/* Floating particles renderer */}

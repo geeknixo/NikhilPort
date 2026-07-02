@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Mail } from "lucide-react"
+import { Mail, Terminal, Cpu } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useLanguage } from "@/lib/language-context"
 
@@ -283,7 +283,7 @@ export function Navigation() {
         }}
         onClick={() => setIsExpanded(!isExpanded)}
         transition={springTransition}
-        className="pointer-events-auto flex flex-col md:flex-row md:items-center justify-between bg-white border-4 border-black rounded-[28px] md:rounded-[32px] px-4 py-2.5 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer overflow-hidden"
+        className="pointer-events-auto flex flex-col md:flex-row md:items-center justify-between bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md border-4 border-black dark:border-white rounded-[28px] md:rounded-[32px] px-4 py-2.5 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,1)] hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[10px_10px_0px_0px_rgba(255,255,255,1)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer overflow-hidden"
         style={{
           width: isExpanded ? "100%" : "255px",
         }}
@@ -396,15 +396,18 @@ export function Navigation() {
 
         {/* Contact CTA - Desktop only */}
         <motion.div layout className="hidden md:flex flex-shrink-0">
-          <a href="#contact">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("open-contact-popup"))}
+            className="bg-black text-white hover:bg-black/90 border-2 border-black rounded-full w-8 h-8 flex items-center justify-center cursor-pointer shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none"
+          >
             <motion.div
               whileHover={{ scale: 1.1, rotate: 15 }}
               whileTap={{ scale: 0.9 }}
-              className="bg-black text-white hover:bg-black/90 border-2 border-black rounded-full w-8 h-8 flex items-center justify-center cursor-pointer shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+              className="w-full h-full flex items-center justify-center"
             >
               <Mail className="w-4 h-4" />
             </motion.div>
-          </a>
+          </button>
         </motion.div>
       </motion.nav>
     </div>

@@ -11,15 +11,40 @@ import { EducationSection } from "@/components/education-section"
 import { TestimonialsSection } from "@/components/testimonials-section"
 import { ArticlesSection } from "@/components/articles-section"
 import { Footer } from "@/components/footer"
+import { ContactPopup } from "@/components/contact-popup"
 import { NeoCursor } from "@/components/neo-cursor"
 import { WelcomeToast } from "@/components/welcome-toast"
 import { HireMeSection } from "@/components/hire-me-section"
 import { FunZone } from "@/components/fun-zone"
 import { ThemeLangControls } from "@/components/theme-lang-controls"
 import { ArcadeZone } from "@/components/arcade-zone"
+import { incrementVisitors } from "@/lib/data-store"
 
 export default function Home() {
   useEffect(() => {
+    // Record page visit in database store
+    incrementVisitors()
+
+    // Real-time Concurrent Active User Heartbeat Setup
+    const sessionId = Math.random().toString(36).substring(2, 9)
+    const BUCKET_URL = "https://kvdb.io/nikhil_port_final_192837"
+
+    const sendHeartbeat = () => {
+      fetch(`${BUCKET_URL}/active_${sessionId}`, {
+        method: "POST",
+        body: Date.now().toString()
+      }).catch(() => {})
+    }
+
+    sendHeartbeat()
+    const heartbeatInterval = setInterval(sendHeartbeat, 10000)
+
+    const cleanupSession = () => {
+      navigator.sendBeacon(`${BUCKET_URL}/active_${sessionId}`, "")
+    }
+
+    window.addEventListener("beforeunload", cleanupSession)
+
     const sections = [
       { id: "about", spokenText: "Who is behind all this great work?" },
       { id: "skills", spokenText: "Technical expertise and skills." },
@@ -42,16 +67,17 @@ export default function Home() {
         if (entry.isIntersecting) {
           const section = sections.find((s) => s.id === entry.target.id)
           if (section && lastSpoken !== section.id) {
-            lastSpoken = section.id
-            
-            // Debounce speech to prevent overlapping on fast scrolling
-            clearTimeout(timeoutId)
+            if (timeoutId) clearTimeout(timeoutId)
             timeoutId = setTimeout(() => {
-              window.dispatchEvent(
-                new CustomEvent("minibot-speak", {
-                  detail: { text: section.spokenText },
-                })
-              )
+              // Cancel ongoing speech to free main rendering threads
+              if (typeof window !== "undefined" && window.speechSynthesis) {
+                window.speechSynthesis.cancel()
+              }
+              const utterance = new SpeechSynthesisUtterance(section.spokenText)
+              utterance.rate = 1.0
+              utterance.pitch = 1.0
+              window.speechSynthesis.speak(utterance)
+              lastSpoken = section.id
             }, 600) // Delay to ensure user is dwelling on the section
           }
         }
@@ -66,6 +92,9 @@ export default function Home() {
     return () => {
       observer.disconnect()
       clearTimeout(timeoutId)
+      clearInterval(heartbeatInterval)
+      window.removeEventListener("beforeunload", cleanupSession)
+      fetch(`${BUCKET_URL}/active_${sessionId}`, { method: "DELETE" }).catch(() => {})
     }
   }, [])
 
@@ -87,6 +116,7 @@ export default function Home() {
       {/* <ArcadeZone /> */}
       <HireMeSection />
       <Footer />
+      <ContactPopup />
     </main>
   )
 }
