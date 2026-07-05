@@ -14,6 +14,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { addSubmission } from "@/lib/data-store";
 
 export function ContactPopup() {
   const [isOpen, setIsOpen] = useState(false);
@@ -49,7 +50,6 @@ export function ContactPopup() {
     setIsSubmitting(true);
 
     // Save submission to database store
-    const { addSubmission } = require("@/lib/data-store");
     addSubmission(formData);
 
     // Simulate UI-only submission success

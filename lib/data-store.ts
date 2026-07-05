@@ -393,10 +393,36 @@ export function syncSubmissionsGlobal(callback: (subs: Submission[]) => void): v
       if (res.ok) return res.json()
       throw new Error()
     })
-    .then((data) => {
-      if (Array.isArray(data)) {
-        localStorage.setItem("nikhil_submissions", JSON.stringify(data))
-        callback(data)
+    .then((remoteData) => {
+      if (Array.isArray(remoteData)) {
+        const local = getSubmissions()
+        const mergedMap = new Map<string, Submission>()
+        
+        // Add remote items first
+        remoteData.forEach(item => {
+          if (item && item.id) mergedMap.set(item.id, item)
+        })
+        
+        // Add local items
+        local.forEach(item => {
+          if (item && item.id) mergedMap.set(item.id, item)
+        })
+        
+        const mergedList = Array.from(mergedMap.values())
+        // Sort by date descending (newest first)
+        mergedList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        
+        localStorage.setItem("nikhil_submissions", JSON.stringify(mergedList))
+        callback(mergedList)
+        
+        // If there were new local submissions, sync them to KVDB
+        if (mergedList.length > remoteData.length) {
+          fetch(`${BUCKET_URL}/submissions`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(mergedList)
+          }).catch(() => {})
+        }
       }
     })
     .catch(() => {
