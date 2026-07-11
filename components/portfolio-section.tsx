@@ -17,6 +17,22 @@ export function PortfolioSection() {
     {
       title: (
         <>
+          Finance Lab <br className="hidden md:inline" />
+          <span className="text-[16px] md:text-[20px] text-gray-500 font-medium block md:mt-1">(Loan & EMI Portal)</span>
+        </>
+      ),
+      description:
+        "Developed an interactive loan eligibility planner and financial calculator suite. Built tools for EMI estimation, interest rate comparisons, amortization mapping, and loan processing inquiries.",
+      tag: "WordPress / PHP / Elementor",
+      bgColor: "bg-[#EC4899]",
+      illustration: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=800&q=80",
+      link: "https://loan.londonstreetstore.com/",
+      year: "2026",
+      shadowClass: "hover:shadow-[12px_12px_0px_0px_#EC4899]"
+    },
+    {
+      title: (
+        <>
           MF SIP CRM <br className="hidden md:inline" />
           <span className="text-[16px] md:text-[20px] text-gray-500 font-medium block md:mt-1">(Mutual Fund Management)</span>
         </>

@@ -52,6 +52,13 @@ export function ContactPopup() {
     // Save submission to database store
     addSubmission(formData);
 
+    // Generate WhatsApp click-to-chat URL
+    const whatsappMessage = `*New Portfolio Enquiry* 🚀\n\n*Name:* ${formData.name}\n*Email:* ${formData.email}\n*Subject:* ${formData.subject}\n*Message:* ${formData.message}`;
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=916377414779&text=${encodeURIComponent(whatsappMessage)}`;
+    
+    // Open WhatsApp in a new tab
+    window.open(whatsappUrl, "_blank");
+
     // Simulate UI-only submission success
     setTimeout(() => {
       setIsSubmitting(false);

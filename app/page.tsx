@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { Loader } from "@/components/loader"
 import { Navigation } from "@/components/navigation"
 import { HeroSection } from "@/components/hero-section"
 import { LogoMarquee } from "@/components/logo-marquee"
@@ -21,9 +22,15 @@ import { ArcadeZone } from "@/components/arcade-zone"
 import { incrementVisitors } from "@/lib/data-store"
 
 export default function Home() {
+  const [loading, setLoading] = useState(true)
+
   useEffect(() => {
     // Record page visit in database store
     incrementVisitors()
+
+    const timer = setTimeout(() => {
+      setLoading(false)
+    }, 400)
 
     // Real-time Concurrent Active User Heartbeat Setup
     const sessionId = Math.random().toString(36).substring(2, 9)
@@ -90,6 +97,7 @@ export default function Home() {
     })
 
     return () => {
+      clearTimeout(timer)
       observer.disconnect()
       clearTimeout(timeoutId)
       clearInterval(heartbeatInterval)
@@ -97,6 +105,10 @@ export default function Home() {
       fetch(`${BUCKET_URL}/active_${sessionId}`, { method: "DELETE" }).catch(() => {})
     }
   }, [])
+
+  if (loading) {
+    return <Loader />
+  }
 
   return (
     <main className="min-h-screen bg-white dark:bg-zinc-950 text-black dark:text-white transition-colors duration-300 relative overflow-hidden">
@@ -116,7 +128,7 @@ export default function Home() {
       {/* <ArcadeZone /> */}
       <HireMeSection />
       <Footer />
-      <ContactPopup />
+      {/* <ContactPopup /> */}
     </main>
   )
 }
